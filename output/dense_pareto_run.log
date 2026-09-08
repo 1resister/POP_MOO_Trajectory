@@ -1,0 +1,24 @@
+Recovered Stage A: N=576, T=0.576 s, Nvec=[158  128  132  158]
+PASS test_pop_discretization (max matrix error 5.17e-26)
+PASS test_augmented_resonance
+PASS test_dynamic_tolerance
+PASS test_contour_error
+PASS test_square_path
+PASS test_resonance_model (10/40 Hz RMS ratio 365.73)
+PASS test_high_order_smoothstep
+PASS test_boundary_conditions (seed N=1800, T=1.800 s)
+PASS test_nvec_history_format
+All 9 unit tests passed.
+Stage B: N range [576,587], selected N=587 (T=0.587 s).
+  Case A feasible: straightness 1.9146e-05, vibration 3.32349
+  Pareto lambda_vib=0.00: feasible, Jvib=3.32349, Jline=1.9146e-05
+  Pareto lambda_vib=0.10: feasible, Jvib=3.31449, Jline=1.91541e-05
+  Pareto lambda_vib=0.20: feasible, Jvib=3.26133, Jline=1.93243e-05
+  Pareto lambda_vib=0.30: feasible, Jvib=2.87213, Jline=2.11401e-05
+  Pareto lambda_vib=0.40: feasible, Jvib=2.64292, Jline=2.28069e-05
+  Pareto lambda_vib=0.50: feasible, Jvib=2.54074, Jline=2.3988e-05
+  Pareto lambda_vib=0.60: feasible, Jvib=2.42561, Jline=2.59755e-05
+  Pareto lambda_vib=0.70: feasible, Jvib=2.30408, Jline=2.92069e-05
+  Pareto lambda_vib=0.80: feasible, Jvib=2.16501, Jline=3.52957e-05
+  Pareto lambda_vib=0.90: feasible, Jvib=2.10994, Jline=3.91265e-05
+  Pareto lambda_vib=1.00: feasible, Jvib=2.10209, Jline=4.10377e-05

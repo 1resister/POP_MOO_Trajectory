@@ -1,0 +1,32 @@
+function results = run_all_cases(cfg)
+%RUN_ALL_CASES Execute tests, Stage A, Stage B, validation and persistence.
+if nargin<1, cfg=trajectory_config(); end
+if isempty(which('casadi.Opti'))
+    error('POP_MOO:MissingCasADi','CasADi MATLAB interface is required.');
+end
+folders={cfg.output.figures,cfg.output.csv,cfg.output.mat};
+for i=1:numel(folders), if ~exist(folders{i},'dir'), mkdir(folders{i}); end, end
+
+test_results=run_unit_tests();
+switch lower(cfg.path.type)
+    case 'square', path=generate_square_path(cfg);
+    case 'csv', path=load_csv_path(cfg.path.csv_file,cfg.path.closed);
+    otherwise, error('POP_MOO:BadPathType','Unsupported path type %s.',cfg.path.type);
+end
+[solution_min_time,stage_a_search]=find_minimum_integer_time(path,cfg);
+solution_min_time.name='Minimum Time';
+[solution_no_resonance,solution_10Hz,pareto_data,pareto_solutions,stage_b_info]= ...
+    solve_secondary_objectives(solution_min_time,path,cfg);
+
+artifacts=finalize_outputs(cfg,path,solution_min_time,solution_no_resonance, ...
+    solution_10Hz,pareto_data,pareto_solutions,test_results,stage_a_search,stage_b_info);
+solution_min_time=artifacts.solution_min_time;
+solution_no_resonance=artifacts.solution_no_resonance;
+solution_10Hz=artifacts.solution_10Hz;
+comparison_table=artifacts.comparison_table;
+results=struct('cfg',cfg,'path',path,'test_results',test_results, ...
+    'solution_min_time',solution_min_time,'solution_no_resonance',solution_no_resonance, ...
+    'solution_10Hz',solution_10Hz,'comparison_table',comparison_table, ...
+    'solution_min_vibration',artifacts.solution_min_vibration, ...
+    'pareto_data',pareto_data,'stage_a_search',stage_a_search,'stage_b_info',stage_b_info);
+end
