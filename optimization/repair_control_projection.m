@@ -43,7 +43,8 @@ for axis=1:2
 end
 repaired.objectives.straightness=straightness_objective(repaired,path,cfg);
 [repaired.objectives.vibration,repaired.objectives.vibration_components]= ...
-    vibration_objective(repaired.modal,repaired.modal_velocity,model,cfg);
+    vibration_objective(repaired.modal,repaired.modal_velocity, ...
+    repaired.acceleration,repaired.jerk,model,cfg);
 repaired.validation=validate_solution(repaired,path,cfg);
 repaired.control_projection.relative_change=norm(U-solution.U,'fro')/max(norm(solution.U,'fro'),eps);
 repaired.control_projection.applied=true;

@@ -1,0 +1,3 @@
+Solution,N,Time_s,Jvibration,ResonanceBandEnergy,BandReductionPercent,MaxContourError_mm,ValidationPass
+No suppression,580,0.58,1.81101384510398,7.45744269501918e-06,0,0.0996367267878853,1
+Resonance suppression,580,0.58,0.808167126795592,2.13822351601066e-08,99.7132765743626,0.0996375219095675,1

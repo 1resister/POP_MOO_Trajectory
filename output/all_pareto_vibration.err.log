@@ -1,0 +1,11 @@
+{错误使用 solve_all_time_vibration_sweep>solve_pair (第 63 行)
+Time-sweep feasibility bridge failed at N=576: Maximum_CpuTime_Exceeded
+
+出错 solve_all_time_vibration_sweep (第 42 行)
+    [noSuppression,suppression,reference]=solve_pair(targetN, ...
+                                          ^^^^^^^^^^^^^^^^^^^^^^^
+出错 resume_square_pop_moo (第 49 行)
+[time_sweep_solutions,time_sweep_data]=solve_all_time_vibration_sweep( ...
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+} 
+ERROR: MATLAB error Exit Status: 0x00000001

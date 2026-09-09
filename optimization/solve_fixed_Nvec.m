@@ -23,6 +23,24 @@ if ~isempty(problem.qPeak) && isfield(warm,'modal') && ~isempty(warm.modal)
     qp=max(abs(warm.modal),[],3);
     problem.opti.set_initial(problem.qPeak,max(qp,1e-9));
 end
+if isfield(problem,'axisPeak') && isfield(warm,'acceleration') && isfield(warm,'jerk')
+    axisRms0=[sqrt(mean((warm.acceleration/cfg.limits.Amax).^2,2)), ...
+        sqrt(mean((warm.jerk/cfg.limits.Jmax).^2,2))];
+    axisPeak0=[max(abs(warm.acceleration),[],2)/cfg.limits.Amax, ...
+        max(abs(warm.jerk),[],2)/cfg.limits.Jmax];
+    problem.opti.set_initial(problem.axisRms,max(axisRms0,1e-9));
+    problem.opti.set_initial(problem.axisPeak,max(axisPeak0,1e-9));
+end
+if ~isempty(problem.bandCoefficients) && isfield(warm,'modal') && ~isempty(warm.modal)
+    coefficient0=zeros(size(problem.bandCoefficients,1), ...
+        numel(problem.bandProjection.frequencies));
+    for axisIndex=1:2
+        q=squeeze(warm.modal(axisIndex,1,:)).';
+        coefficient0(2*axisIndex-1,:)=q*problem.bandProjection.cosine.';
+        coefficient0(2*axisIndex,:)=q*problem.bandProjection.sine.';
+    end
+    problem.opti.set_initial(problem.bandCoefficients,coefficient0);
+end
 
 solverSuccess=false; timedOut=false; message=''; stats=struct();
 try
@@ -48,8 +66,21 @@ solution.solver_success=solverSuccess; solution.solver_timeout=timedOut;
 solution.objective_spec=objectiveSpec;
 solution.objectives.straightness=straightness_objective(solution,path,cfg);
 [solution.objectives.vibration,solution.objectives.vibration_components]= ...
-    vibration_objective(solution.modal,solution.modal_velocity,problem.model,cfg);
+    vibration_objective(solution.modal,solution.modal_velocity, ...
+    solution.acceleration,solution.jerk,problem.model,cfg);
 solution.validation=validate_solution(solution,path,cfg);
+if isfield(objectiveSpec,'resonance_band_reference') && ...
+        ~isempty(objectiveSpec.resonance_band_reference)
+    reference.proxy=objectiveSpec.resonance_band_reference;
+    if isfield(objectiveSpec,'resonance_band_reference_actual')
+        reference.actual=objectiveSpec.resonance_band_reference_actual;
+    else
+        reference.actual=reference.proxy;
+    end
+    enforce=cfg.objective.resonance_band_hard_enable && ...
+        objectiveSpec.lambda_vibration>0;
+    solution=attach_resonance_band_objective(solution,cfg,reference,enforce);
+end
 solution.feasible=(solverSuccess || timedOut) && solution.validation.pass;
 if timedOut && solution.validation.pass, solution.status='solver_timeout_but_feasible'; end
 end

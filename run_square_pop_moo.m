@@ -16,5 +16,6 @@ results=run_all_cases(cfg);
 fprintf('\nMinimum feasible N: %d samples\nTmin: %.3f s\n', ...
     results.solution_min_time.N,results.solution_min_time.T);
 disp(results.comparison_table);
-fprintf('All output written under:\n  %s\n',fullfile(cfg.project_root,'output'));
+fprintf('All output written to:\n  figures: %s\n  csv:     %s\n  mat:     %s\n', ...
+    cfg.output.figures,cfg.output.csv,cfg.output.mat);
 end

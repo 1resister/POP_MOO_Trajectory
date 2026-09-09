@@ -51,6 +51,12 @@ cfg.optimization.max_coordinate_passes = 120;
 cfg.optimization.pareto_weights = 0:0.1:1;
 cfg.optimization.secondary_sample_offsets = [];
 cfg.optimization.run_optional_two_mode = false;
+% Optimize one no-suppression/suppression pair at every integer machining
+% time in [Nmin, floor((1+time_slack)*Nmin)].
+cfg.optimization.time_sweep_enable = true;
+cfg.optimization.time_sweep_lambda_vibration = 1.0;
+cfg.optimization.time_sweep_resume = true;
+cfg.optimization.time_sweep_boundary_cpu_multiplier = 2.0;
 
 cfg.straightness.enable = true;
 cfg.straightness.hard_enable = false;
@@ -58,7 +64,7 @@ cfg.straightness.core_velocity_tolerance = 1e-7; % normalized tolerance
 
 cfg.resonance.enable = true;
 cfg.resonance.mode(1).enable = true;
-cfg.resonance.mode(1).frequency = 10;    % [Hz]
+cfg.resonance.mode(1).frequency = 50;    % [Hz]
 cfg.resonance.mode(1).zeta = 0.02;       % damping ratio [-]
 cfg.resonance.mode(1).gain = 1.0;        % static gain [-]
 cfg.resonance.mode(2).enable = false;
@@ -71,6 +77,15 @@ cfg.frequency.maximum_plot_frequency = 100; % [Hz]
 
 cfg.objective.vibration_energy_weight = 1.0;
 cfg.objective.vibration_peak_weight = 0.1;
+cfg.objective.acceleration_rms_weight = 0.2;
+cfg.objective.acceleration_peak_weight = 0.1;
+cfg.objective.jerk_rms_weight = 0.2;
+cfg.objective.jerk_peak_weight = 0.1;
+% Explicit target-frequency PSD-band term.  The weight controls how far
+% the optimizer pushes below the hard minimum reduction.
+cfg.objective.resonance_band_weight = 1.0;
+cfg.objective.resonance_band_hard_enable = true;
+cfg.objective.resonance_band_min_reduction = 0.05; % at least 5% vs no suppression
 cfg.objective.feas_pop_weight = 1e-8;
 cfg.objective.feas_crackle_weight = 1e-8;
 cfg.objective.feas_snap_weight = 1e-8;
@@ -91,6 +106,7 @@ cfg.validation.geometry_abs_tol = 2e-4;  % [mm]
 cfg.validation.time_abs_tol = 1e-12;     % [s]
 cfg.validation.backward_velocity_tol = 1e-4; % [mm/s]
 cfg.validation.nan_fail = true;
+cfg.validation.resonance_band_relative_tol = 1e-3;
 
 cfg.plot.visible = 'off';
 cfg.plot.resolution = 180;               % saved PNG dpi

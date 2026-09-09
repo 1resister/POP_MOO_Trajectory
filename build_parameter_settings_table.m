@@ -1,0 +1,144 @@
+function settings = build_parameter_settings_table(cfg)
+%BUILD_PARAMETER_SETTINGS_TABLE Build a Chinese reference table for cfg.
+% The current-value column is stored as text because it contains scalars,
+% vectors, logical values, strings and empty settings in the same column.
+
+if nargin < 1 || isempty(cfg)
+    cfg = trajectory_config();
+end
+
+rows = strings(0,8);
+
+add('基础与路径','cfg.project_root',cfg.project_root,'文件夹','项目根目录，由 trajectory_config.m 所在位置自动确定。','不适用。','不适用。','自动确定，请勿直接修改');
+add('基础与路径','cfg.Ts',cfg.Ts,'s','插补周期；总时间严格等于 N×Ts。','提高单步时长，变量数减少，但时间和频域分辨率变粗。','减小单步时长，轨迹更细，但 NLP 规模和计算时间增加。','建议按控制器周期修改');
+add('基础与路径','cfg.path.type',cfg.path.type,'-','路径类型；默认 square，也可配合 CSV 路径接口扩展。','不适用。','不适用。','建议按研究路径修改');
+add('基础与路径','cfg.path.square_side',cfg.path.square_side,'mm','默认正方形路径的边长。','路径变长，通常加工时间和状态变化量增加。','路径变短，通常加工时间减少。','建议按工件几何修改');
+add('基础与路径','cfg.path.closed',cfg.path.closed,'逻辑值','是否把路径视为闭合路径。','true 时末点回到起点并执行闭合路径处理。','false 时按开放路径处理。','建议按路径拓扑修改');
+add('基础与路径','cfg.path.csv_file',cfg.path.csv_file,'文件路径','外部刀位点 CSV 文件；空字符串表示使用内置路径。','不适用。','不适用。','使用自定义路径时修改');
+
+add('几何容差','cfg.geometry.line_tolerance',cfg.geometry.line_tolerance,'mm','直线核心区域允许的最大轮廓误差。','可提高速度和可行性，但轨迹精度下降。','精度提高，但时间和求解难度可能增加。','建议按加工精度修改');
+add('几何容差','cfg.geometry.corner_tolerance',cfg.geometry.corner_tolerance,'mm','角点处允许的最大轮廓误差。','允许更大的切角和更高角点速度。','角点更贴近理想路径，但可能需要降速。','建议按角点质量修改');
+add('几何容差','cfg.geometry.transition_length',cfg.geometry.transition_length,'mm','角点前后动态容差由直线值过渡到角点值的长度。','放宽区更长，转向更平缓。','放宽区更集中，角点附近状态变化更激烈。','建议按几何尺度修改');
+add('几何容差','cfg.geometry.overlap_extension',cfg.geometry.overlap_extension,'mm','相邻线段在角点处允许的切向重叠长度。','线段切换更宽松，但需关注捷径风险。','顺序约束更严格，过小可能导致不可行。','高级调参');
+
+add('运动学硬约束','cfg.limits.Vmax',cfg.limits.Vmax,'mm/s','X/Y 轴速度绝对值上限。','允许更快运动；也会改变速度归一化尺度。','限制速度并可能增加最短时间。','建议按机床参数修改');
+add('运动学硬约束','cfg.limits.Amax',cfg.limits.Amax,'mm/s^2','X/Y 轴加速度绝对值上限，也是模态输入归一化尺度。','允许更快转向，但可能增大激振。','转向更平缓，最短时间通常增加。','建议按机床参数修改');
+add('运动学硬约束','cfg.limits.Jmax',cfg.limits.Jmax,'mm/s^3','X/Y 轴 jerk（跃度）绝对值上限。','允许加速度更快变化，振动风险可能上升。','平滑性增强，但时间和求解难度可能增加。','建议按机床参数修改');
+add('运动学硬约束','cfg.limits.SnapMax',cfg.limits.SnapMax,'mm/s^4','X/Y 轴 snap 绝对值上限。','允许 jerk 更快变化。','限制高阶突变，轨迹更平滑。','建议按机床参数修改');
+add('运动学硬约束','cfg.limits.CrackleMax',cfg.limits.CrackleMax,'mm/s^5','X/Y 轴 crackle 绝对值上限。','放宽五阶导数约束。','增强高阶平滑性，可能增加加工时间。','建议按机床参数修改');
+add('运动学硬约束','cfg.limits.POPMax',cfg.limits.POPMax,'mm/s^6','控制输入 POP 的绝对值上限。','控制更激进，可能降低时间但增加高频成分。','控制更平滑，但可行时间可能增加。','建议按机床参数修改');
+
+add('端点边界','cfg.boundary.zero_velocity',cfg.boundary.zero_velocity,'逻辑值','是否强制起点和终点速度为零。','true 时端点完全静止条件更严格。','false 时允许非零端点速度。','通常保持 true');
+add('端点边界','cfg.boundary.zero_acceleration',cfg.boundary.zero_acceleration,'逻辑值','是否强制起点和终点加速度为零。','true 时端点更平滑。','false 时端点约束更宽松。','通常保持 true');
+add('端点边界','cfg.boundary.zero_jerk',cfg.boundary.zero_jerk,'逻辑值','是否强制起点和终点 jerk 为零。','true 时端点高阶连续性更强。','false 时更易获得短时间解。','通常保持 true');
+add('端点边界','cfg.boundary.zero_snap',cfg.boundary.zero_snap,'逻辑值','是否强制起点和终点 snap 为零。','true 时端点更平滑。','false 时放宽端点高阶状态。','通常保持 true');
+add('端点边界','cfg.boundary.zero_crackle',cfg.boundary.zero_crackle,'逻辑值','是否强制起点和终点 crackle 为零。','true 时端点更平滑。','false 时放宽端点高阶状态。','通常保持 true');
+add('端点边界','cfg.boundary.zero_endpoint_pop',cfg.boundary.zero_endpoint_pop,'逻辑值','是否强制首尾 POP 控制量为零。','true 时控制输入在首尾不突变。','false 时端点控制更自由。','通常保持 true');
+
+add('归一化尺度','cfg.scale.position',cfg.scale.position,'mm','位置变量的 NLP 归一化尺度。','归一化位置数值变小。','归一化位置数值变大。','自动派生，请勿直接修改');
+add('归一化尺度','cfg.scale.velocity',cfg.scale.velocity,'mm/s','速度变量的 NLP 归一化尺度。','归一化速度数值变小。','归一化速度数值变大。','自动派生，请勿直接修改');
+add('归一化尺度','cfg.scale.acceleration',cfg.scale.acceleration,'mm/s^2','加速度变量的 NLP 归一化尺度。','归一化加速度数值变小。','归一化加速度数值变大。','自动派生，请勿直接修改');
+add('归一化尺度','cfg.scale.jerk',cfg.scale.jerk,'mm/s^3','jerk 变量的 NLP 归一化尺度。','归一化 jerk 数值变小。','归一化 jerk 数值变大。','自动派生，请勿直接修改');
+add('归一化尺度','cfg.scale.snap',cfg.scale.snap,'mm/s^4','snap 变量的 NLP 归一化尺度。','归一化 snap 数值变小。','归一化 snap 数值变大。','自动派生，请勿直接修改');
+add('归一化尺度','cfg.scale.crackle',cfg.scale.crackle,'mm/s^5','crackle 变量的 NLP 归一化尺度。','归一化 crackle 数值变小。','归一化 crackle 数值变大。','自动派生，请勿直接修改');
+add('归一化尺度','cfg.scale.pop',cfg.scale.pop,'mm/s^6','POP 变量的 NLP 归一化尺度。','归一化 POP 数值变小。','归一化 POP 数值变大。','自动派生，请勿直接修改');
+
+add('Stage A 与时间范围','cfg.optimization.time_slack',cfg.optimization.time_slack,'相对值','Stage B 相对最短时间可增加的比例；0.02 表示 2%。','可用时间点增多，通常能获得更低振动。','更接近严格最短时间，折中空间减少。','建议按时间容许量修改');
+add('Stage A 与时间范围','cfg.optimization.initial_segment_time',cfg.optimization.initial_segment_time,'s/段','构造慢速初始可行轨迹时每段的初始时长。','初始可行性更好，但首次模型更大。','启动更快，但可能找不到初始可行解。','求解困难时再修改');
+add('Stage A 与时间范围','cfg.optimization.initial_growth',cfg.optimization.initial_growth,'倍率','初始轨迹不可行时，每次放大分段时间的倍率。','更快扩大时长，但搜索步长更粗。','增长更细，但尝试次数可能增加。','高级调参');
+add('Stage A 与时间范围','cfg.optimization.max_initial_attempts',cfg.optimization.max_initial_attempts,'次','构造初始可行轨迹的最大尝试次数。','更不易过早失败，但最坏运行时间增加。','失败更快，但可能错过可行初值。','求解困难时再修改');
+add('Stage A 与时间范围','cfg.optimization.continuation_factor',cfg.optimization.continuation_factor,'倍率','Stage A 时间压缩 continuation 的倍率。','更接近 1 时压缩更细、求解更稳但次数更多。','压缩更激进、次数更少但更易不可行。','高级调参');
+add('Stage A 与时间范围','cfg.optimization.min_segment_samples',cfg.optimization.min_segment_samples,'个/段','每条几何线段允许的最少插补区间数。','避免过少离散点，但会抬高最短时间下界。','允许更短分配，但离散质量可能下降。','通常保持默认');
+add('Stage A 与时间范围','cfg.optimization.neighborhood_radius',cfg.optimization.neighborhood_radius,'整数区间','最短整数分配附近的局部重分配搜索半径。','检查更多 Nvec 邻域，耗时增加。','搜索更快，但可能漏掉更优分配。','高级调参');
+add('Stage A 与时间范围','cfg.optimization.max_coordinate_passes',cfg.optimization.max_coordinate_passes,'轮','逐段坐标搜索的最大轮数。','搜索更充分，最坏耗时增加。','更快停止，可能未完全收敛。','高级调参');
+
+add('Pareto 与逐时间扫描','cfg.optimization.pareto_weights',cfg.optimization.pareto_weights,'向量','Stage B 振动权重 lambda_vib 的扫描网格。','增加权重点密度可得到更多 Pareto 解，但 NLP 次数增加。','减少权重点可加快运行，但前沿更稀疏。','需要更多 Pareto 解时修改');
+add('Pareto 与逐时间扫描','cfg.optimization.secondary_sample_offsets',cfg.optimization.secondary_sample_offsets,'整数向量','相对默认 Stage B 时间额外采样的整数时间偏移；空值表示不额外采样。','加入更多时间切片，计算量增加。','减少额外时间切片。','高级调参');
+add('Pareto 与逐时间扫描','cfg.optimization.run_optional_two_mode',cfg.optimization.run_optional_two_mode,'逻辑值','是否执行可选的双模态扩展算例。','true 会增加一组双模态求解。','false 仅运行主要算例。','仅研究双模态时开启');
+add('Pareto 与逐时间扫描','cfg.optimization.time_sweep_enable',cfg.optimization.time_sweep_enable,'逻辑值','是否对 Nmin 到 Nmax 的每个整数时间求无抑制/有抑制成对解。','true 可得到完整逐时间对比，耗时显著增加。','false 跳过逐时间成对扫描。','需要完整对比时保持 true');
+add('Pareto 与逐时间扫描','cfg.optimization.time_sweep_lambda_vibration',cfg.optimization.time_sweep_lambda_vibration,'相对值','逐时间扫描中有抑制解采用的振动目标权重，范围 (0,1]。','更强调完整振动目标。','更保留直线保持目标，抑振强度可能下降。','建议按折中偏好修改');
+add('Pareto 与逐时间扫描','cfg.optimization.time_sweep_resume',cfg.optimization.time_sweep_resume,'逻辑值','是否读取检查点并跳过已完成且兼容的时间点。','true 适合长时间计算和中断恢复。','false 会重新计算全部时间点。','通常保持 true');
+add('Pareto 与逐时间扫描','cfg.optimization.time_sweep_boundary_cpu_multiplier',cfg.optimization.time_sweep_boundary_cpu_multiplier,'倍率','严格最短时间边界点相对普通单次求解的 CPU 时限倍率。','边界点更可能完成，但等待更久。','更快超时，可能失去 Nmin 成对结果。','边界点超时时提高');
+
+add('直线保持','cfg.straightness.enable',cfg.straightness.enable,'逻辑值','是否启用直线核心区域的法向速度惩罚。','true 可减少非运动轴参与直线段。','false 不再优化直线保持。','通常保持 true');
+add('直线保持','cfg.straightness.hard_enable',cfg.straightness.hard_enable,'逻辑值','是否把直线核心法向速度改为硬约束。','true 直线更严格，但更易不可行。','false 使用更稳健的软目标。','默认 false，谨慎开启');
+add('直线保持','cfg.straightness.core_velocity_tolerance',cfg.straightness.core_velocity_tolerance,'归一化速度','直线核心硬约束允许的法向速度数值容差。','硬约束更宽松。','更严格，但可能产生数值困难。','仅 hard_enable=true 时调节');
+
+add('谐振模型','cfg.resonance.enable',cfg.resonance.enable,'逻辑值','是否启用二阶机械谐振模态及抑振目标。','true 建模并优化模态响应。','false 跳过谐振抑制。','研究抑振时保持 true');
+add('谐振模型','cfg.resonance.mode(1).enable',cfg.resonance.mode(1).enable,'逻辑值','是否启用第一机械模态。','true 使用第一模态。','false 忽略第一模态。','通常保持 true');
+add('谐振模型','cfg.resonance.mode(1).frequency',cfg.resonance.mode(1).frequency,'Hz','第一模态固有频率，也是默认 PSD 抑制中心频率。','抑制目标向更高频移动。','抑制目标向更低频移动。','测试其他频率时修改');
+add('谐振模型','cfg.resonance.mode(1).zeta',cfg.resonance.mode(1).zeta,'-','第一模态阻尼比。','共振峰更宽更低，响应衰减更快。','共振更尖锐，抑振要求通常更敏感。','按辨识模型修改');
+add('谐振模型','cfg.resonance.mode(1).gain',cfg.resonance.mode(1).gain,'-','第一模态静态增益。','同等输入产生更大的模态响应。','模态响应幅值减小。','按辨识模型修改');
+add('谐振模型','cfg.resonance.mode(2).enable',cfg.resonance.mode(2).enable,'逻辑值','是否启用第二机械模态。','true 同时考虑第二模态，NLP 规模增加。','false 仅考虑第一模态。','研究双模态时开启');
+add('谐振模型','cfg.resonance.mode(2).frequency',cfg.resonance.mode(2).frequency,'Hz','第二模态固有频率。','第二抑制目标向更高频移动。','第二抑制目标向更低频移动。','仅第二模态启用时修改');
+add('谐振模型','cfg.resonance.mode(2).zeta',cfg.resonance.mode(2).zeta,'-','第二模态阻尼比。','第二模态响应衰减更快。','第二模态共振更尖锐。','按辨识模型修改');
+add('谐振模型','cfg.resonance.mode(2).gain',cfg.resonance.mode(2).gain,'-','第二模态静态增益。','第二模态响应幅值增加。','第二模态响应幅值减小。','按辨识模型修改');
+
+add('频域分析','cfg.frequency.bandwidth',cfg.frequency.bandwidth,'Hz（半带宽）','目标频率两侧的 PSD 积分半带宽；1 表示 f0±1 Hz。','覆盖更宽频带，抑制目标更综合。','更聚焦目标频点，但对频偏更敏感。','建议按模态带宽修改');
+add('频域分析','cfg.frequency.maximum_plot_frequency',cfg.frequency.maximum_plot_frequency,'Hz','PSD 和 FFT 图横轴显示的最高频率。','显示更多高频内容，低频细节相对压缩。','聚焦低频，但可能隐藏高频峰。','只影响绘图范围');
+
+add('振动目标','cfg.objective.vibration_energy_weight',cfg.objective.vibration_energy_weight,'权重','二阶模态归一化能量项的权重。','更强调降低整体模态能量。','弱化整体模态能量。','建议按研究重点修改');
+add('振动目标','cfg.objective.vibration_peak_weight',cfg.objective.vibration_peak_weight,'权重','二阶模态响应峰值项的权重。','更强调压低瞬时模态峰值。','弱化模态峰值。','建议按研究重点修改');
+add('振动目标','cfg.objective.acceleration_rms_weight',cfg.objective.acceleration_rms_weight,'权重','X/Y 轴归一化加速度 RMS 的权重。','更强调全过程加速度平稳。','弱化加速度 RMS。','建议按研究重点修改');
+add('振动目标','cfg.objective.acceleration_peak_weight',cfg.objective.acceleration_peak_weight,'权重','X/Y 轴归一化加速度峰值的权重。','更强调压低最大加速度。','弱化加速度峰值。','建议按研究重点修改');
+add('振动目标','cfg.objective.jerk_rms_weight',cfg.objective.jerk_rms_weight,'权重','X/Y 轴归一化 jerk RMS 的权重。','更强调全过程跃度平稳。','弱化 jerk RMS。','建议按研究重点修改');
+add('振动目标','cfg.objective.jerk_peak_weight',cfg.objective.jerk_peak_weight,'权重','X/Y 轴归一化 jerk 峰值的权重。','更强调压低最大 jerk。','弱化 jerk 峰值。','建议按研究重点修改');
+add('振动目标','cfg.objective.resonance_band_weight',cfg.objective.resonance_band_weight,'权重','目标频率 PSD 带能量相对无抑制参考值的软目标权重。','更强力压低目标频带，但可能牺牲其他指标。','抑制推动力减弱，只保留其他振动项或硬门槛。','确保目标频带下降时重点调节');
+add('振动目标','cfg.objective.resonance_band_hard_enable',cfg.objective.resonance_band_hard_enable,'逻辑值','是否把目标频带最低下降比例作为硬约束。','true 时未达到最低降幅的解不可行。','false 时只依靠软权重推动下降。','需要保证 PSD 下降时保持 true');
+add('振动目标','cfg.objective.resonance_band_min_reduction',cfg.objective.resonance_band_min_reduction,'相对值','目标频带相对无抑制解的最低下降比例；0.05 表示至少 5%。','保证更大降幅，但可行性和求解难度降低。','更易可行，但保证的抑制效果变弱。','建议从小到大逐步提高');
+add('可行性正则化','cfg.objective.feas_pop_weight',cfg.objective.feas_pop_weight,'权重','可行性求解中 POP 的微小正则化权重。','更偏好较小 POP，可能改变桥接解。','正则化作用减弱。','通常保持默认');
+add('可行性正则化','cfg.objective.feas_crackle_weight',cfg.objective.feas_crackle_weight,'权重','可行性求解中 crackle 的微小正则化权重。','更偏好较小 crackle。','正则化作用减弱。','通常保持默认');
+add('可行性正则化','cfg.objective.feas_snap_weight',cfg.objective.feas_snap_weight,'权重','可行性求解中 snap 的微小正则化权重。','更偏好较小 snap。','正则化作用减弱。','通常保持默认');
+
+add('IPOPT 求解器','cfg.solver.ipopt.max_iter',cfg.solver.ipopt.max_iter,'次','每个固定 N NLP 的最大 IPOPT 迭代次数。','给困难问题更多迭代机会，但可能耗时更长。','更快停止，但可能提前失败。','超出迭代次数时提高');
+add('IPOPT 求解器','cfg.solver.ipopt.max_cpu_time',cfg.solver.ipopt.max_cpu_time,'s/次求解','每个固定 N NLP 的最大 CPU 时间。','降低超时概率，但单次等待更久。','更快返回，但可行解可能尚未找到。','出现 Maximum_CpuTime_Exceeded 时提高');
+add('IPOPT 求解器','cfg.solver.ipopt.tol',cfg.solver.ipopt.tol,'-','IPOPT 的目标收敛容差。','数值更宽松、较易收敛。','精度更高，但求解更难。','高级调参');
+add('IPOPT 求解器','cfg.solver.ipopt.acceptable_tol',cfg.solver.ipopt.acceptable_tol,'-','IPOPT 可接受解的较宽松容差。','更容易以 acceptable 状态结束。','要求更高的可接受精度。','高级调参');
+add('IPOPT 求解器','cfg.solver.ipopt.acceptable_iter',cfg.solver.ipopt.acceptable_iter,'次','连续满足 acceptable_tol 后允许结束的迭代数。','需维持更久才结束。','更早接受近似收敛。','高级调参');
+add('IPOPT 求解器','cfg.solver.ipopt.print_level',cfg.solver.ipopt.print_level,'级别','IPOPT 控制台输出详细程度。','显示更多求解器诊断。','输出更安静。','调试时提高');
+add('IPOPT 求解器','cfg.solver.expand',cfg.solver.expand,'逻辑值','是否让 CasADi 展开符号图后交给求解器。','true 常可提高求解速度，但构建和内存需求可能增加。','false 保留未展开图。','通常保持 true');
+add('IPOPT 求解器','cfg.solver.hard_bound_margin',cfg.solver.hard_bound_margin,'相对值','在硬上限内部预留的数值裕量。','离边界更远、验证更稳，但有效能力下降。','更充分利用极限，数值越界风险增加。','验证边界偶发超限时小幅提高');
+
+add('独立验证','cfg.validation.dynamics_abs_tol',cfg.validation.dynamics_abs_tol,'归一化绝对误差','精确离散动力学残差容差。','验证更宽松。','验证更严格，可能拒绝数值上可接受的解。','通常保持默认');
+add('独立验证','cfg.validation.boundary_abs_tol',cfg.validation.boundary_abs_tol,'归一化绝对误差','端点边界状态残差容差。','验证更宽松。','验证更严格。','通常保持默认');
+add('独立验证','cfg.validation.relative_limit_tol',cfg.validation.relative_limit_tol,'相对值','运动学硬上限验证允许的相对数值误差。','更容忍求解器边界误差。','更严格检查上限。','通常保持默认');
+add('独立验证','cfg.validation.geometry_abs_tol',cfg.validation.geometry_abs_tol,'mm','轮廓误差验证允许的绝对数值裕量。','更容忍几何数值误差。','更严格检查容差带。','通常保持默认');
+add('独立验证','cfg.validation.time_abs_tol',cfg.validation.time_abs_tol,'s','T 与 N×Ts 一致性的绝对容差。','时间一致性检查更宽松。','时间一致性检查更严格。','通常保持默认');
+add('独立验证','cfg.validation.backward_velocity_tol',cfg.validation.backward_velocity_tol,'mm/s','判断切向反向运动时允许的负速度容差。','更容忍轻微反向数值噪声。','更严格禁止反向运动。','通常保持默认');
+add('独立验证','cfg.validation.nan_fail',cfg.validation.nan_fail,'逻辑值','是否在结果含 NaN/Inf 时直接验证失败。','true 可阻止无效结果进入输出。','false 可能掩盖无效数值。','保持 true');
+add('独立验证','cfg.validation.resonance_band_relative_tol',cfg.validation.resonance_band_relative_tol,'相对值','独立 PSD 频带下降检查的相对数值容差。','更容忍门槛附近的数值偏差。','更严格执行最低降幅。','通常保持默认');
+
+add('绘图与输出','cfg.plot.visible',cfg.plot.visible,'on/off','MATLAB 图窗是否可见。','on 便于交互查看，但批处理会弹窗。','off 适合无人值守运行。','批处理通常保持 off');
+add('绘图与输出','cfg.plot.resolution',cfg.plot.resolution,'dpi','保存 PNG 图片的分辨率。','图片更清晰，文件更大、导出更慢。','文件更小，但文字和曲线清晰度下降。','按论文或屏幕需求修改');
+add('绘图与输出','cfg.output.figures',cfg.output.figures,'文件夹','所有图片的输出目录。','不适用。','不适用。','需要隔离不同算例时修改');
+add('绘图与输出','cfg.output.csv',cfg.output.csv,'文件夹','轨迹、指标和参数表 CSV 的输出目录。','不适用。','不适用。','需要隔离不同算例时修改');
+add('绘图与输出','cfg.output.mat',cfg.output.mat,'文件夹','结果、搜索历史和检查点 MAT 文件的输出目录。','不适用。','不适用。','需要隔离不同算例时修改');
+
+settings = array2table(rows,'VariableNames', ...
+    {'参数类别','MATLAB参数名','当前值','单位','中文说明', ...
+    '调大或启用后的影响','调小或禁用后的影响','修改建议'});
+
+    function add(category,name,value,unit,description,increase,decrease,recommendation)
+        rows(end+1,:) = [string(category),string(name),value_text(value), ...
+            string(unit),string(description),string(increase), ...
+            string(decrease),string(recommendation)]; %#ok<AGROW>
+    end
+end
+
+function text = value_text(value)
+if islogical(value) && isscalar(value)
+    if value, text="true"; else, text="false"; end
+elseif isnumeric(value)
+    text=string(mat2str(value,12));
+elseif isstring(value)
+    if isscalar(value) && strlength(value)==0
+        text="''";
+    else
+        text=join(value," ");
+    end
+elseif ischar(value)
+    if isempty(value), text="''"; else, text=string(value); end
+else
+    text=string(value);
+end
+end

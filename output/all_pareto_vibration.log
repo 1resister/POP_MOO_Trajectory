@@ -1,0 +1,40 @@
+Recovered Stage A: N=576, T=0.576 s, Nvec=[158  128  132  158]
+PASS test_pop_discretization (max matrix error 5.17e-26)
+PASS test_augmented_resonance
+PASS test_dynamic_tolerance
+PASS test_contour_error
+PASS test_square_path
+PASS test_resonance_model (50/200 Hz RMS ratio 403.83)
+PASS test_high_order_smoothstep
+PASS test_boundary_conditions (seed N=1800, T=1.800 s)
+PASS test_nvec_history_format
+PASS test_vibration_objective_axis_rms_peak (J=3.906540)
+PASS test_resonance_band_objective (Welch relative error 1.64e-15)
+PASS test_time_sweep_frequency_analysis (FFT peak 50.049 Hz)
+All 12 unit tests passed.
+Stage B: N range [576,587], selected N=587 (T=0.587 s).
+  Stage-B feasibility bridge: Solve_Succeeded (max violation 3.34e-14)
+  Case A feasible: straightness 1.9146e-05, vibration 0.804226
+  Resonance-band reference: 1.24088e-05 (required reduction 5.00%)
+  Pareto lambda_vib=0.00: feasible, Jvib=1.80423, Jline=1.9146e-05, band reduction=0.00%
+  Pareto lambda_vib=0.10: feasible, Jvib=0.825601, Jline=1.92531e-05, band reduction=97.87%
+  Pareto lambda_vib=0.20: feasible, Jvib=0.820665, Jline=1.92735e-05, band reduction=98.36%
+  Pareto lambda_vib=0.30: feasible, Jvib=0.818904, Jline=1.92899e-05, band reduction=98.54%
+  Pareto lambda_vib=0.40: feasible, Jvib=0.815436, Jline=1.93404e-05, band reduction=98.86%
+  Pareto lambda_vib=0.50: feasible, Jvib=0.81307, Jline=1.93926e-05, band reduction=99.08%
+  Pareto lambda_vib=0.60: feasible, Jvib=0.811428, Jline=1.94492e-05, band reduction=99.22%
+  Pareto lambda_vib=0.70: feasible, Jvib=0.808628, Jline=1.95929e-05, band reduction=99.43%
+  Pareto lambda_vib=0.80: feasible, Jvib=0.80515, Jline=1.98804e-05, band reduction=99.65%
+  Pareto lambda_vib=0.90: feasible, Jvib=0.797327, Jline=2.12119e-05, band reduction=99.79%
+  Pareto lambda_vib=1.00: feasible, Jvib=0.785505, Jline=3.43588e-05, band reduction=99.85%
+Time sweep N=587 (T=0.587 s): band reduction 99.85% [reused Stage B]
+Time sweep N=586 (T=0.586 s): band reduction 99.84%
+Time sweep N=585 (T=0.585 s): band reduction 99.84%
+Time sweep N=584 (T=0.584 s): band reduction 99.82%
+Time sweep N=583 (T=0.583 s): band reduction 99.80%
+Time sweep N=582 (T=0.582 s): band reduction 99.79%
+Time sweep N=581 (T=0.581 s): band reduction 99.73%
+Time sweep N=580 (T=0.580 s): band reduction 99.71%
+Time sweep N=579 (T=0.579 s): band reduction 99.72%
+Time sweep N=578 (T=0.578 s): band reduction 99.79%
+Time sweep N=577 (T=0.577 s): band reduction 99.64%

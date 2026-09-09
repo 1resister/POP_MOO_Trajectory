@@ -1,0 +1,13 @@
+PASS test_pop_discretization (max matrix error 5.17e-26)
+PASS test_augmented_resonance
+PASS test_dynamic_tolerance
+PASS test_contour_error
+PASS test_square_path
+PASS test_resonance_model (50/200 Hz RMS ratio 403.83)
+PASS test_high_order_smoothstep
+PASS test_boundary_conditions (seed N=1800, T=1.800 s)
+PASS test_nvec_history_format
+PASS test_vibration_objective_axis_rms_peak (J=3.906540)
+PASS test_resonance_band_objective (Welch relative error 1.64e-15)
+All 11 unit tests passed.
+BAND_OBJECTIVE_TESTS_COMPLETE

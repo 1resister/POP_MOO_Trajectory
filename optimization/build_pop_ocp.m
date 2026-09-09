@@ -9,6 +9,7 @@ if ~isfield(objectiveSpec,'lambda_vibration'), objectiveSpec.lambda_vibration=0;
 if ~isfield(objectiveSpec,'lambda_straightness'), objectiveSpec.lambda_straightness=1; end
 if ~isfield(objectiveSpec,'vibration_scale'), objectiveSpec.vibration_scale=1; end
 if ~isfield(objectiveSpec,'straightness_scale'), objectiveSpec.straightness_scale=1; end
+if ~isfield(objectiveSpec,'resonance_band_reference'), objectiveSpec.resonance_band_reference=[]; end
 import casadi.*
 Nvec=round(Nvec(:).'); N=sum(Nvec);
 model=build_augmented_dynamics(cfg); nx=model.n_axis_state;
@@ -84,8 +85,36 @@ for i=1:path.n_segments
     cursor=cursor+Ni;
 end
 
-% Modal energy and epigraph peak. q is dimensionless; qdot is normalized by wn.
-vibration=0; qPeak=[];
+% Xbar acceleration and jerk states are already normalized by Amax/Jmax.
+accelerationRows=[3,nx+3]; jerkRows=[4,nx+4];
+normalizedAcceleration=Xbar(accelerationRows,:);
+normalizedJerk=Xbar(jerkRows,:);
+axisRms=opti.variable(2,2); % rows: X/Y; columns: acceleration/jerk
+opti.subject_to(axisRms(:)>=0);
+axisPeak=opti.variable(2,2); % rows: X/Y; columns: acceleration/jerk
+opti.subject_to(axisPeak(:)>=0);
+for axisIndex=1:2
+    % Epigraph-style auxiliary variables preserve the exact RMS definition
+    % without introducing a dense Hessian through sqrt(sum(x.^2)).
+    opti.subject_to(axisRms(axisIndex,1)^2== ...
+        sum(normalizedAcceleration(axisIndex,:).^2)/(N+1));
+    opti.subject_to(axisRms(axisIndex,2)^2== ...
+        sum(normalizedJerk(axisIndex,:).^2)/(N+1));
+    opti.subject_to(axisPeak(axisIndex,1)>=normalizedAcceleration(axisIndex,:).');
+    opti.subject_to(axisPeak(axisIndex,1)>=-normalizedAcceleration(axisIndex,:).');
+    opti.subject_to(axisPeak(axisIndex,2)>=normalizedJerk(axisIndex,:).');
+    opti.subject_to(axisPeak(axisIndex,2)>=-normalizedJerk(axisIndex,:).');
+end
+accelerationRms=sum(axisRms(:,1));
+jerkRms=sum(axisRms(:,2));
+accelerationPeak=sum(axisPeak(:,1));
+jerkPeak=sum(axisPeak(:,2));
+vibration=cfg.objective.acceleration_rms_weight*accelerationRms + ...
+    cfg.objective.acceleration_peak_weight*accelerationPeak + ...
+    cfg.objective.jerk_rms_weight*jerkRms + ...
+    cfg.objective.jerk_peak_weight*jerkPeak;
+qPeak=[];
+bandCoefficients=[]; bandEnergy=0; bandNormalized=0; bandProjection=[];
 if model.n_modes>0
     qPeak=opti.variable(2,model.n_modes);
     opti.subject_to(qPeak(:)>=0);
@@ -102,6 +131,33 @@ if model.n_modes>0
         end
     end
 end
+if model.n_modes>0 && ~isempty(objectiveSpec.resonance_band_reference) && ...
+        objectiveSpec.resonance_band_reference>0
+    bandProjection=resonance_band_projection(N,cfg.Ts, ...
+        model.mode(1).frequency,cfg.frequency.bandwidth);
+    frequencyCount=numel(bandProjection.frequencies);
+    bandCoefficients=opti.variable(4,frequencyCount);
+    for axisIndex=1:2
+        base=(axisIndex-1)*nx;
+        q=Xbar(base+model.mode(1).q_index,:);
+        realRow=2*axisIndex-1;
+        imaginaryRow=2*axisIndex;
+        opti.subject_to(bandCoefficients(realRow,:)== ...
+            q*bandProjection.cosine.');
+        opti.subject_to(bandCoefficients(imaginaryRow,:)== ...
+            q*bandProjection.sine.');
+        bandEnergy=bandEnergy+sum(bandProjection.weights.* ...
+            (bandCoefficients(realRow,:).^2+ ...
+            bandCoefficients(imaginaryRow,:).^2));
+    end
+    bandNormalized=bandEnergy/objectiveSpec.resonance_band_reference;
+    vibration=vibration+cfg.objective.resonance_band_weight*bandNormalized;
+    if cfg.objective.resonance_band_hard_enable && ...
+            objectiveSpec.lambda_vibration>0
+        targetRatio=1-cfg.objective.resonance_band_min_reduction;
+        opti.subject_to(bandNormalized<=targetRatio);
+    end
+end
 regularization=regularization_objective(Xbar,Ubar,cfg,nx);
 switch lower(objectiveSpec.stage)
     case 'feasibility'
@@ -116,8 +172,15 @@ opti.minimize(objective);
 opti.solver('ipopt',configure_ipopt(cfg));
 
 problem.opti=opti; problem.Xbar=Xbar; problem.Ubar=Ubar;
-problem.qPeak=qPeak; problem.model=model; problem.N=N; problem.Nvec=Nvec;
+problem.qPeak=qPeak; problem.axisRms=axisRms; problem.axisPeak=axisPeak;
+problem.bandCoefficients=bandCoefficients;
+problem.bandEnergy=bandEnergy; problem.bandNormalized=bandNormalized;
+problem.bandProjection=bandProjection;
+problem.model=model; problem.N=N; problem.Nvec=Nvec;
 problem.objective=objective; problem.straightness=straight;
-problem.vibration=vibration; problem.regularization=regularization;
+problem.vibration=vibration; problem.acceleration_rms=accelerationRms;
+problem.acceleration_peak=accelerationPeak; problem.jerk_rms=jerkRms;
+problem.jerk_peak=jerkPeak;
+problem.regularization=regularization;
 problem.objectiveSpec=objectiveSpec;
 end

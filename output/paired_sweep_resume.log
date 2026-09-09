@@ -1,0 +1,42 @@
+PASS test_pop_discretization (max matrix error 5.17e-26)
+PASS test_augmented_resonance
+PASS test_dynamic_tolerance
+PASS test_contour_error
+PASS test_square_path
+PASS test_resonance_model (50/200 Hz RMS ratio 403.83)
+PASS test_high_order_smoothstep
+PASS test_boundary_conditions (seed N=1800, T=1.800 s)
+PASS test_nvec_history_format
+PASS test_vibration_objective_axis_rms_peak (J=3.906540)
+PASS test_resonance_band_objective (Welch relative error 1.64e-15)
+PASS test_time_sweep_frequency_analysis (FFT peak 50.049 Hz)
+All 12 unit tests passed.
+Time sweep N=587 (T=0.587 s): band reduction 99.85% [reused Stage B]
+Time sweep N=586 (T=0.586 s): band reduction 99.84%
+Time sweep N=585 (T=0.585 s): band reduction 99.84%
+Time sweep N=584 (T=0.584 s): band reduction 99.82%
+Time sweep N=583 (T=0.583 s): band reduction 99.80%
+Time sweep N=582 (T=0.582 s): band reduction 99.79%
+Time sweep N=581 (T=0.581 s): band reduction 99.73%
+Time sweep N=580 (T=0.580 s): band reduction 99.71%
+Time sweep N=579 (T=0.579 s): band reduction 99.78%
+Time sweep N=578 (T=0.578 s): band reduction 99.79%
+Time sweep N=577 (T=0.577 s): band reduction 99.64%
+Time sweep N=576 (T=0.576 s): band reduction 39.97%
+     N     Time_s           Nvec            LambdaVibration    NoSuppressionJvibration    SuppressedJvibration    NoSuppressionBandEnergy    SuppressedBandEnergy    BandReductionPercent    NoSuppressionMaxContourError_mm    SuppressedMaxContourError_mm    NoSuppressionFeasible    SuppressionFeasible    NoSuppressionStatus    SuppressionStatus
+    ___    ______    ___________________    _______________    _______________________    ____________________    _______________________    ____________________    ____________________    _______________________________    ____________________________    _____________________    ___________________    ___________________    _________________
+
+    576    0.576     "[158 128 132 158]"           1                   1.8286                    1.4287                 2.1132e-05                1.2685e-05                39.971                       0.09809                          0.098089                      true                    true             "Solve_Succeeded"     "Solve_Succeeded"
+    577    0.577     "[158 129 132 158]"           1                   1.8178                   0.81804                 2.6138e-05                9.3457e-08                99.642                      0.099618                          0.099636                      true                    true             "Solve_Succeeded"     "Solve_Succeeded"
+    578    0.578     "[158 130 132 158]"           1                   1.8152                   0.81256                 2.7404e-05                5.7758e-08                99.789                      0.099637                          0.099638                      true                    true             "Solve_Succeeded"     "Solve_Succeeded"
+    579    0.579     "[158 131 132 158]"           1                    1.813                   0.81001                 1.5767e-05                3.4871e-08                99.779                      0.099637                          0.099638                      true                    true             "Solve_Succeeded"     "Solve_Succeeded"
+    580     0.58     "[158 132 132 158]"           1                    1.811                   0.80817                 7.4574e-06                2.1382e-08                99.713                      0.099637                          0.099638                      true                    true             "Solve_Succeeded"     "Solve_Succeeded"
+    581    0.581     "[158 133 132 158]"           1                   1.8098                   0.80456                 7.7603e-06                2.0653e-08                99.734                      0.097636                          0.099637                      true                    true             "Solve_Succeeded"     "Solve_Succeeded"
+    582    0.582     "[158 133 133 158]"           1                   1.8087                   0.80075                 9.4896e-06                2.0132e-08                99.788                       0.09764                          0.099637                      true                    true             "Solve_Succeeded"     "Solve_Succeeded"
+    583    0.583     "[158 134 133 158]"           1                   1.8077                   0.79748                 9.7198e-06                1.9102e-08                99.803                      0.097709                          0.099637                      true                    true             "Solve_Succeeded"     "Solve_Succeeded"
+    584    0.584     "[158 134 134 158]"           1                   1.8067                   0.79422                 1.0956e-05                1.9888e-08                99.818                      0.097711                          0.099637                      true                    true             "Solve_Succeeded"     "Solve_Succeeded"
+    585    0.585     "[158 135 134 158]"           1                   1.8058                   0.79113                 1.1903e-05                1.9557e-08                99.836                        0.0978                          0.099637                      true                    true             "Solve_Succeeded"     "Solve_Succeeded"
+    586    0.586     "[158 135 135 158]"           1                    1.805                   0.78832                 1.1908e-05                1.9452e-08                99.837                      0.097796                          0.099637                      true                    true             "Solve_Succeeded"     "Solve_Succeeded"
+    587    0.587     "[158 136 135 158]"           1                   1.8042                    0.7855                 1.2409e-05                 1.882e-08                99.848                      0.098059                          0.099637                      true                    true             "Solve_Succeeded"     "Solve_Succeeded"
+
+PAIRED_SWEEP_COMPLETE

@@ -1,0 +1,71 @@
+Recovered Stage A: N=576, T=0.576 s, Nvec=[158  128  132  158]
+PASS test_pop_discretization (max matrix error 5.17e-26)
+PASS test_augmented_resonance
+PASS test_dynamic_tolerance
+PASS test_contour_error
+PASS test_square_path
+PASS test_resonance_model (50/200 Hz RMS ratio 403.83)
+PASS test_high_order_smoothstep
+PASS test_boundary_conditions (seed N=1800, T=1.800 s)
+PASS test_nvec_history_format
+PASS test_vibration_objective_axis_rms_peak (J=3.906540)
+PASS test_resonance_band_objective (Welch relative error 1.64e-15)
+All 11 unit tests passed.
+Stage B: N range [576,587], selected N=587 (T=0.587 s).
+  Stage-B feasibility bridge: Solve_Succeeded (max violation 3.34e-14)
+  Case A feasible: straightness 1.9146e-05, vibration 0.804226
+  Resonance-band reference: 1.24088e-05 (required reduction 5.00%)
+  Pareto lambda_vib=0.00: feasible, Jvib=1.80423, Jline=1.9146e-05, band reduction=0.00%
+  Pareto lambda_vib=0.10: feasible, Jvib=0.825601, Jline=1.92531e-05, band reduction=97.87%
+  Pareto lambda_vib=0.20: feasible, Jvib=0.820665, Jline=1.92735e-05, band reduction=98.36%
+  Pareto lambda_vib=0.30: feasible, Jvib=0.818904, Jline=1.92899e-05, band reduction=98.54%
+  Pareto lambda_vib=0.40: feasible, Jvib=0.815436, Jline=1.93404e-05, band reduction=98.86%
+  Pareto lambda_vib=0.50: feasible, Jvib=0.81307, Jline=1.93926e-05, band reduction=99.08%
+  Pareto lambda_vib=0.60: feasible, Jvib=0.811428, Jline=1.94492e-05, band reduction=99.22%
+  Pareto lambda_vib=0.70: feasible, Jvib=0.808628, Jline=1.95929e-05, band reduction=99.43%
+  Pareto lambda_vib=0.80: feasible, Jvib=0.80515, Jline=1.98804e-05, band reduction=99.65%
+  Pareto lambda_vib=0.90: feasible, Jvib=0.797327, Jline=2.12119e-05, band reduction=99.79%
+  Pareto lambda_vib=1.00: feasible, Jvib=0.785505, Jline=3.43588e-05, band reduction=99.85%
+                 Metric                 Minimum_Time    No_Res_Suppression    Resonance_Suppression
+    ________________________________    ____________    __________________    _____________________
+
+    "Cycle Time [s]"                          0.576              0.587                  0.587      
+    "Time Increase vs Tmin [%]"                   0             1.9097                 1.9097      
+    "Max Contour Error [mm]"               0.098088           0.098059               0.099605      
+    "Contour RMSE [mm]"                    0.043834            0.04073               0.040579      
+    "Max Line Error [mm]"                      0.05               0.05                   0.05      
+    "Max Corner Sagitta [mm]"              0.098088           0.098059               0.099605      
+    "Max |Vx| [mm/s]"                        256.87             254.41                 254.39      
+    "Max |Vy| [mm/s]"                        257.51             254.39                 254.39      
+    "Max |Ax| [mm/s^2]"                      5098.3             5064.4                 5064.2      
+    "Max |Ay| [mm/s^2]"                      5105.7             5064.9                 5065.1      
+    "Max |Jx| [mm/s^3]"                       2e+05              2e+05                  2e+05      
+    "Max |Jy| [mm/s^3]"                       2e+05              2e+05                  2e+05      
+    "Max |Snapx| [mm/s^4]"                    7e+06              7e+06                  7e+06      
+    "Max |Snapy| [mm/s^4]"                    7e+06              7e+06                  7e+06      
+    "Max |Cracklex| [mm/s^5]"            1.6563e+09         1.6471e+09             1.6063e+09      
+    "Max |Crackley| [mm/s^5]"            1.6539e+09         1.6118e+09             1.6404e+09      
+    "Max |POPx| [mm/s^6]"                     2e+11              2e+11                  2e+11      
+    "Max |POPy| [mm/s^6]"                     2e+11              2e+11                  2e+11      
+    "Straightness Objective"             4.6997e-05         1.9146e-05             2.1212e-05      
+    "Vibration Objective"                    3.8401             1.8042                0.79733      
+    "Modal Energy Contribution"             0.15255            0.14352                0.13971      
+    "Modal Peak Contribution"              0.055614           0.053793                0.05416      
+    "Acceleration RMS Contribution"         0.10773            0.10467                0.10329      
+    "Acceleration Peak Contribution"        0.10204            0.10129                0.10129      
+    "Jerk RMS Contribution"                 0.21297            0.20095                0.19678      
+    "Jerk Peak Contribution"                    0.2                0.2                    0.2      
+    "Resonance Band Contribution"            3.0092                  1                0.00209      
+    "Modal RMS X"                           0.27346            0.26584                0.26271      
+    "Modal RMS Y"                           0.27425            0.26573                0.26179      
+    "Modal Peak X"                          0.52663            0.52358                0.52355      
+    "Modal Peak Y"                          0.52802             0.5136                 0.5172      
+    "50 Hz Band Energy X"                1.4199e-05         7.7144e-06             2.5215e-08      
+    "50 Hz Band Energy Y"                2.3141e-05         4.6944e-06             7.1986e-10      
+    "50 Hz Energy Reduction [%]"                NaN                  0                 99.791      
+    "Maximum Error Utilisation"                   1                  1                      1      
+    "Mean Error Utilisation"                  0.554            0.56218                0.54518      
+    "Line Region Utilisation"               0.61888            0.69976                0.65864      
+    "Corner Region Utilisation"             0.48324             0.4149                0.42207      
+
+HARD_BAND_50_COMPLETE
