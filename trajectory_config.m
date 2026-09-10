@@ -46,16 +46,22 @@ cfg.optimization.continuation_factor = 0.92;
 cfg.optimization.min_segment_samples = 12;
 cfg.optimization.neighborhood_radius = 2;
 cfg.optimization.max_coordinate_passes = 120;
-% Eleven evenly spaced weights provide a denser Pareto front while keeping
-% the default Stage B run practical. Increase further when needed.
+% Legacy straightness-vibration scan weights. The main workflow now builds
+% the Pareto front from machining time and vibration, so this vector is not
+% used by run_square_pop_moo.
 cfg.optimization.pareto_weights = 0:0.1:1;
 cfg.optimization.secondary_sample_offsets = [];
 cfg.optimization.run_optional_two_mode = false;
-% Optimize one no-suppression/suppression pair at every integer machining
-% time in [Nmin, floor((1+time_slack)*Nmin)].
+% The time-vibration Pareto front contains one no-suppression/suppression
+% pair at every integer machining time in the Stage-B range.
 cfg.optimization.time_sweep_enable = true;
+% Must remain 1: at each fixed time the Pareto candidate minimizes the
+% complete vibration objective. Adjust cfg.objective.* component weights
+% to change the definition of vibration.
 cfg.optimization.time_sweep_lambda_vibration = 1.0;
 cfg.optimization.time_sweep_resume = true;
+% Multiplies the CPU limit at the minimum-time boundary and on one
+% automatic retry after a time-sweep solve reaches Maximum_CpuTime_Exceeded.
 cfg.optimization.time_sweep_boundary_cpu_multiplier = 2.0;
 
 cfg.straightness.enable = true;
@@ -64,7 +70,7 @@ cfg.straightness.core_velocity_tolerance = 1e-7; % normalized tolerance
 
 cfg.resonance.enable = true;
 cfg.resonance.mode(1).enable = true;
-cfg.resonance.mode(1).frequency = 50;    % [Hz]
+cfg.resonance.mode(1).frequency = 10;    % [Hz]
 cfg.resonance.mode(1).zeta = 0.02;       % damping ratio [-]
 cfg.resonance.mode(1).gain = 1.0;        % static gain [-]
 cfg.resonance.mode(2).enable = false;

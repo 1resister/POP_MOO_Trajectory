@@ -1,6 +1,8 @@
-function test_parameter_settings_table()
+function test_parameter_settings_table(cfg)
 %TEST_PARAMETER_SETTINGS_TABLE Check coverage and Chinese descriptions.
-cfg=trajectory_config();
+if nargin<1
+    cfg=trajectory_config();
+end
 settings=build_parameter_settings_table(cfg);
 names=settings.("MATLAB参数名");
 required=["cfg.project_root";"cfg.Ts";"cfg.geometry.corner_tolerance";"cfg.limits.POPMax"; ...
@@ -17,7 +19,10 @@ assert(numel(unique(names))==height(settings),'Parameter names must be unique.')
 assert(all(strlength(settings.("中文说明"))>0), ...
     'Every parameter must have a Chinese description.');
 frequencyValue=settings.("当前值")(names=="cfg.resonance.mode(1).frequency");
-assert(isscalar(frequencyValue) && frequencyValue=="50", ...
-    'The default resonance-frequency value is not synchronized.');
+frequencyNumber=str2double(frequencyValue);
+frequencyTolerance=max(1,abs(cfg.resonance.mode(1).frequency))*1e-12;
+assert(isscalar(frequencyNumber) && isfinite(frequencyNumber) && ...
+    abs(frequencyNumber-cfg.resonance.mode(1).frequency)<=frequencyTolerance, ...
+    'The configured resonance-frequency value is not synchronized.');
 fprintf('PASS test_parameter_settings_table (%d parameters)\n',height(settings));
 end

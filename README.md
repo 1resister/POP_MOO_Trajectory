@@ -1,5 +1,11 @@
 # POP 控制的 CNC 多目标轨迹优化
 
+[![MATLAB](https://img.shields.io/badge/MATLAB-R2021b%2B-orange.svg)](https://www.mathworks.com/products/matlab.html)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/1resister/POP_MOO_Trajectory?style=social)](https://github.com/1resister/POP_MOO_Trajectory/stargazers)
+
+> **English summary:** An open-source MATLAB/CasADi framework for time–vibration Pareto optimization of CNC toolpaths with sixth-order POP control, dynamic contour tolerances, mechanical resonance suppression, and reproducible validation outputs.
+
 本项目将 CNC 刀具轨迹生成直接构造成最优控制问题。项目借鉴论文 *Digital Thread Enabled Time Optimal Trajectory Generation for Machining Toolpaths* 中全局轨迹优化、顺序刀位线区域、直接多重打靶、CasADi 和 IPOPT 的思想，并在此基础上进行了以下扩展：
 
 - 将控制输入从 jerk 提升为 POP；
@@ -10,6 +16,8 @@
 - 支持每个轴最多两个二阶机械谐振模态；
 - 使用“最短时间 + epsilon 约束二阶段优化”，而不是简单的时间加权和；
 - 对所有最终结果进行独立动力学、几何、频域和约束验证。
+
+![时间–振动 Pareto 前沿](output/figures/17_pareto_front.png)
 
 ## 1. 默认研究对象
 
@@ -172,26 +180,44 @@ Stage A 的主目标是寻找满足全部硬约束的最小整数周期数 `Nmin
 
 `Nvec` 中各线段的区间数不要求相等。IPOPT 每次只求解固定 `Nvec` 的连续最优控制问题。
 
-### Stage B：近最短时间多目标优化
+### Stage B：时间–振动多目标优化
 
-Stage B 使用时间 epsilon 约束：
+本项目的两个 Pareto 目标现在明确为：
 
 ```text
-Nmin <= N <= floor(1.02 Nmin)
+目标 1：minimize T，其中 T = N × Ts
+目标 2：minimize J_vibration
 ```
 
-在该整数时间范围内，程序先在所选 Stage B 整数网格上求解一次可行性桥接，以恢复高频模态状态与精确离散动力学的一致性；随后优化直线保持、二阶模态振动能量、模态峰值，以及 X/Y 轴加速度和 jerk 的 RMS 与峰值，并扫描振动权重生成 Pareto 数据。时间不作为可以被其他目标无限补偿的普通加权项。
+搜索采用时间 epsilon 范围：
 
-默认还会对范围内的每一个整数加工时间 `N = Nmin:Nmax` 分别执行一次成对优化：先求无谐振抑制参考轨迹，再在相同 `N`、相同 `Nvec` 和相同硬约束下求有谐振抑制轨迹。因此，不再只有 Stage B 上端的单个加工时间接受振动再优化。该扫描由以下参数控制：
+```text
+Nmin <= N <= floor((1 + time_slack) Nmin)
+```
+
+对该范围内的每一个整数加工时间 `N`，程序固定相同的时间、`Nvec` 和硬约束，求解两条轨迹：
+
+1. 无谐振抑制参考解，用于公平计算目标频带 PSD 基准；
+2. 最小振动解，完整最小化二阶模态能量与峰值、X/Y 加速度 RMS 与峰值、X/Y jerk RMS 与峰值，以及目标频带 PSD 能量。
+
+每个固定时间只保留其最小振动解作为 Pareto 候选，再执行非支配筛选。主 Pareto 图的横轴是实际加工时间 `T [s]`，纵轴是完整振动目标 `J_vibration`；直线保持不再是 Pareto 坐标，只保留为无抑制参考目标和可选硬约束。
+
+三个代表解定义为：
+
+- 最短时间：Pareto 前沿上 `T` 最小的振动优化解；
+- 最小振动：Pareto 前沿上 `J_vibration` 最小的解；
+- knee：先把时间和振动分别归一化到 `[0,1]`，再选择除两个端点外距离理想点 `(0,0)` 最近的非支配解。
+
+逐整数时间成对优化由以下参数控制：
 
 ```matlab
 cfg.optimization.time_sweep_enable = true;
-cfg.optimization.time_sweep_lambda_vibration = 1.0;
+cfg.optimization.time_sweep_lambda_vibration = 1.0; % 时间–振动 Pareto 必须为 1
 cfg.optimization.time_sweep_resume = true; % 逐组保存并从检查点恢复
 cfg.optimization.time_sweep_boundary_cpu_multiplier = 2.0; % 最短时间边界求解时限倍率
 ```
 
-`time_sweep_lambda_vibration` 是每个加工时间上有抑制解采用的振动权重，可设为 `(0,1]`。默认 `1.0` 表示每个时间点都尽可能降低完整振动目标；每一对解都会独立验证 50 Hz PSD 带能量必须满足配置的最低下降比例。扫描过程逐组写入 `pareto_time_sweep_checkpoint.mat`，最短时间边界点默认允许使用普通单次求解两倍的 CPU 时间。
+`time_sweep_lambda_vibration` 必须保持 `1.0`，以确保每一个固定时间的候选点确实最小化完整振动目标。若希望改变“振动”的定义，应调整 `cfg.objective.*` 下各组成项权重，而不是把该值改小。每一对解都会独立验证 50 Hz PSD 带能量必须满足配置的最低下降比例。扫描过程逐组写入 `pareto_time_sweep_checkpoint.mat`，最短时间边界点默认允许使用普通单次求解两倍的 CPU 时间。
 
 ## 10. 直线保持目标
 
@@ -298,13 +324,15 @@ cfg.resonance.mode(2).gain = 1.0;
 
 双模态增广动力学和可选直线硬约束均已通过构建测试。
 
-## 13. 三组默认实验
+## 13. 三组 Pareto 代表解与对照
 
 完整运行会生成：
 
-1. `Minimum Time`：Stage A 最短整数时间解；
-2. `No Resonance Suppression`：近最短时间，只优化直线保持，不惩罚谐振；
-3. `50 Hz Resonance Suppression`：在相同时间、几何和运动学限制下加入当前配置的 50 Hz 模态与显式 PSD 频带目标。
+1. `Minimum Time Pareto`：时间–振动前沿上加工时间最短的振动优化解；
+2. `Time-Vibration Knee`：归一化时间–振动空间中距离理想点最近的内部非支配解；
+3. `Minimum Vibration`：时间–振动前沿上完整振动目标最小的解。
+
+此外，程序会为 knee 所在的同一加工时间输出 `No Resonance Suppression` 对照解，并为每一个 Pareto 时间点保留一组有抑制/无抑制配对结果。
 
 “无谐振抑制”并不表示忽略机械系统。该轨迹在优化完成后仍会输入同一个 50 Hz、阻尼比 0.02、增益 1 的模态模型，以便进行公平比较。
 
@@ -366,16 +394,17 @@ CasADi MATLAB interface is required.
 | 修改过渡长度 | `cfg.geometry.transition_length` | `2 mm` | 动态容差在角点前后平滑变化的距离。 |
 | 修改运动上限 | `cfg.limits.Vmax` ～ `POPMax` | 见参数表 | 分别限制速度、加速度、jerk、snap、crackle 和 POP。 |
 | 修改近最短时间范围 | `cfg.optimization.time_slack` | `0.02` | Stage B 最多允许比严格最短时间增加 2%。 |
-| 增加 Pareto 解 | `cfg.optimization.pareto_weights` | `0:0.1:1` | 改为 `0:0.05:1` 得到 21 个权重点，改为 `0:0.02:1` 得到 51 个权重点。 |
+| 增加 Pareto 解 | `cfg.optimization.time_slack` | `0.02` | 增大时间上限可加入更多整数时间点；`Ts=1 ms` 时每增加 1 ms 就多一个候选点。 |
 | 启用逐时间成对扫描 | `cfg.optimization.time_sweep_enable` | `true` | 对每个整数时间都生成无抑制和有抑制解。 |
-| 调整逐时间抑振权重 | `cfg.optimization.time_sweep_lambda_vibration` | `1.0` | 越大越强调完整振动目标，允许范围为 `(0,1]`。 |
+| 固定时间下最小化振动 | `cfg.optimization.time_sweep_lambda_vibration` | `1.0` | 时间–振动 Pareto 必须保持 `1.0`；振动内部权重由 `cfg.objective.*` 调节。 |
 | 修改目标谐振频率 | `cfg.resonance.mode(1).frequency` | `50 Hz` | 同时决定第一模态固有频率和默认 PSD 抑制中心。 |
 | 修改 PSD 积分带宽 | `cfg.frequency.bandwidth` | `1 Hz` | 半带宽；默认统计 49～51 Hz。 |
 | 调整频带抑振强度 | `cfg.objective.resonance_band_weight` | `1.0` | 越大越强调降低目标频带 PSD 能量。 |
 | 保证最低 PSD 降幅 | `cfg.objective.resonance_band_min_reduction` | `0.05` | 硬约束开启时要求至少下降 5%。 |
 | 调整 X/Y 加速度指标 | `acceleration_rms_weight`、`acceleration_peak_weight` | `0.2`、`0.1` | 控制加速度 RMS 与峰值在振动目标中的比重。 |
 | 调整 X/Y jerk 指标 | `jerk_rms_weight`、`jerk_peak_weight` | `0.2`、`0.1` | 控制 jerk RMS 与峰值在振动目标中的比重。 |
-| 延长单次求解时间 | `cfg.solver.ipopt.max_cpu_time` | `180 s` | 遇到 `Maximum_CpuTime_Exceeded` 时可适当增大。 |
+| 延长单次求解时间 | `cfg.solver.ipopt.max_cpu_time` | `180 s` | 遇到 `Maximum_CpuTime_Exceeded` 时可适当增大；逐时间扫描会从最后迭代点自动延时重试一次。 |
+| 调整超时重试倍率 | `cfg.optimization.time_sweep_boundary_cpu_multiplier` | `2.0` | 同时用于最短时间边界和逐时间扫描的自动重试；较慢电脑可设为 `3～4`。 |
 | 修改图片清晰度 | `cfg.plot.resolution` | `180 dpi` | 只影响 PNG 导出清晰度和文件大小。 |
 
 归一化尺度 `cfg.scale.*` 默认由路径尺寸和运动学上限自动派生，不建议单独修改。验证容差 `cfg.validation.*` 用于独立验收，不能为了让失败解通过而随意放宽。
@@ -385,7 +414,7 @@ CasADi MATLAB interface is required.
 ```matlab
 cfg = trajectory_config();
 cfg.resonance.mode(1).frequency = 50;
-cfg.optimization.pareto_weights = 0:0.05:1;
+cfg.optimization.time_slack = 0.05; % 扩大时间范围，得到更多时间–振动点
 cfg.objective.resonance_band_weight = 2.0;
 cfg.objective.resonance_band_min_reduction = 0.10;
 parameter_settings = write_parameter_settings(cfg);
@@ -442,12 +471,16 @@ Tmin = 0.576 s
 Nmin = 576
 Nvec = [158, 128, 132, 158]
 
-Stage B 时间 = 0.587 s
-相对 Tmin 增加 = 1.9097%
-Knee 权重 lambda_vib = 0.90
-无抑制 50 Hz 带能量 = 1.2408821e-5
-Knee 50 Hz 带能量 = 2.5935008e-8
-Knee 50 Hz 带能量下降 = 99.7910%
+Pareto 时间范围 = 0.576～0.587 s
+时间上限相对 Tmin 增加 = 1.9097%
+Pareto 目标 = 加工时间 T 与完整振动目标 J_vibration
+最短时间 Pareto 解：T = 0.576 s，J_vibration = 1.4286784
+时间–振动 knee：N = 577，T = 0.577 s
+knee 相对 Tmin 增加 = 0.1736%
+knee J_vibration = 0.8180376
+knee 50 Hz 带能量 = 9.3457267e-8
+knee 50 Hz 带能量下降 = 99.6425%
+最小振动解：N = 587，T = 0.587 s，J_vibration = 0.7855045
 最小振动解 50 Hz 带能量 = 1.8820348e-8
 最小振动解 50 Hz 带能量下降 = 99.8483%
 
@@ -458,7 +491,7 @@ Knee 50 Hz 带能量下降 = 99.7910%
 其余 0.577～0.587 s 带能量下降 = 99.642%～99.848%
 ```
 
-三条代表轨迹和 12 组成对时间扫描轨迹均通过配置数值容差下的独立验证，中间三个角点没有停车。当前显式 50 Hz 频带目标在优化器内直接约束 Welch PSD 带积分；原有 11 点权重前沿的具体数值见 `pareto_resonance_band_metrics.csv`，所有加工时间的成对结果见 `pareto_time_sweep_summary.csv`。
+三条代表轨迹和 12 组成对时间扫描轨迹均通过配置数值容差下的独立验证，中间三个角点没有停车。当前显式 50 Hz 频带目标在优化器内直接约束 Welch PSD 带积分；时间–振动前沿见 `pareto_data.csv`，每个时间点的频带指标见 `pareto_resonance_band_metrics.csv`，完整成对结果见 `pareto_time_sweep_summary.csv`。
 
 ## 20. 输出文件
 
@@ -472,21 +505,22 @@ Knee 50 Hz 带能量下降 = 99.7910%
 - `corner_analysis.csv`：四个角点的进入时间、速度、误差及高阶状态；
 - `parameter_settings.xlsx`：91 项默认配置的格式化中文参数设置表；
 - `parameter_settings.csv`：当前运行配置的中文参数快照，可用 `write_parameter_settings(cfg)` 单独刷新；
-- `pareto_data.csv`：二阶段 Pareto 扫描数据，包括总振动目标、七类加权贡献、显式谐振带指标，以及 X/Y 轴加速度和 jerk 的 RMS/峰值明细。
-- `pareto_resonance_band_metrics.csv`：每个 Pareto 解在当前谐振频率 ±带宽内的 X/Y/总带能量，以及相对无抑制解的实际下降率。
-- `pareto_time_sweep_summary.csv`：从 `Nmin` 到 `Nmax` 的每个整数加工时间对应的无抑制/有抑制成对结果、50 Hz 带能量、降幅、轮廓误差和可行性状态。
+- `pareto_data.csv`：时间–振动 Pareto 主表，包含 `N`、实际时间、完整振动目标、非支配标记、归一化坐标、理想点距离以及最短时间/knee/最小振动标记。
+- `pareto_resonance_band_metrics.csv`：每个时间–振动候选解在当前谐振频率 ±带宽内的 X/Y/总带能量，以及相对同一时间无抑制解的实际下降率。
+- `pareto_time_sweep_summary.csv`：从 `Nmin` 到 `Nmax` 的每个成功整数加工时间对应的无抑制/有抑制成对结果、目标频带能量、降幅、轮廓误差和可行性状态。
+- `pareto_time_sweep_skipped.csv`：自动延时重试和频带约束渐进求解后仍未获得可行成对解的离散时间点及失败原因；这些点不会混入 Pareto 前沿。
 
-默认扫描 11 个 Pareto 权重点，即 `lambda_vib = 0:0.1:1`。如需更密集的前沿，可在 `trajectory_config.m` 中调整 `cfg.optimization.pareto_weights`，例如设为 `0:0.05:1` 得到 21 个权重点。
+默认尝试在 `Nmin:Nmax` 的每个整数时间上生成一个最小振动候选点。当前 `Ts=1 ms`、`time_slack=0.02`，最多尝试 `N=576:587` 共 12 个候选点。若某个时间点在自动延时重试和频带约束渐进求解后仍不可行，程序会记录并剔除该点，继续用其余可行点构建 Pareto 前沿。需要更多 Pareto 点时应增大 `cfg.optimization.time_slack`；`cfg.optimization.pareto_weights` 仅为旧版直线–振动扫描保留，主流程不再使用。
 
 轨迹 CSV 每一行对应一个 1 ms 插补节点，包含位置、全部运动学导数、POP、轮廓误差、允许误差、误差利用率和模态响应。
 
 ### `output/mat`
 
-`results.mat` 保存配置、路径、最短时间、无谐振惩罚、knee、最小振动轨迹、12 组成对时间扫描轨迹，以及对比表、Pareto 数据、频域结果、搜索历史和测试结果。目录中还包含 Stage A、Stage B、最近可行解和 `pareto_time_sweep_checkpoint.mat` 检查点，便于恢复长时间计算。
+`results.mat` 保存配置、路径、Stage A 严格最短时间参考、时间–振动 Pareto 的最短时间/knee/最小振动轨迹、12 组成对时间扫描轨迹、非支配标志和代表解索引，以及对比表、频域结果、搜索历史和测试结果。目录中还包含 Stage A、Stage B、最近可行解和 `pareto_time_sweep_checkpoint.mat` 检查点，便于恢复长时间计算。
 
 ### `output/figures`
 
-自动生成 17 张科研风格 PNG，包括路径、角点、动态容差、误差利用率、全部运动学状态、POP、模态响应、PSD、约束利用率和 Pareto 前沿。其中 `01_toolpath_comparison.png` 与 `02_four_corner_zooms.png` 对比最短时间、knee 和最小振动三条代表轨迹，`17_pareto_front.png` 标出这三个代表解。
+自动生成 17 张科研风格 PNG，包括路径、角点、动态容差、误差利用率、全部运动学状态、POP、模态响应、PSD、约束利用率和 Pareto 前沿。其中 `01_toolpath_comparison.png` 与 `02_four_corner_zooms.png` 对比最短时间、knee 和最小振动三条代表轨迹；`17_pareto_front.png` 的横轴为加工时间、纵轴为完整振动目标，并标出这三个代表解。
 
 所有刀具轨迹图和角点放大图均显示动态轮廓容差带：直线核心区域允许误差为 0.05 mm，角点处放宽至 0.10 mm，并在角点前后 2 mm 范围内平滑过渡。
 
@@ -509,3 +543,7 @@ Knee 50 Hz 带能量下降 = 99.7910%
 - `frequency_summary.csv`：六个信号在目标频率处的 PSD、FFT 幅值及抑制前后降幅。
 
 文件夹根目录的 `00_pareto_time_sweep_summary.png` 汇总所有加工时间的无抑制/有抑制带能量和实际下降率。由于默认范围为每个 1 ms 整数时间点都求一对 NLP，完整运行时间会比原来的单时间 Pareto 扫描明显增加。
+
+## 21. 开源许可证
+
+本项目采用 [MIT License](LICENSE)。欢迎在研究与工程项目中使用、修改和分享；如果本项目对你有帮助，也欢迎引用、提交 Issue 或点亮 Star。

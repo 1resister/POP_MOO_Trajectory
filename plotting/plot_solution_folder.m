@@ -62,15 +62,22 @@ end
 
 function plot_single_pareto_context(data,solution,label,highlightColor,cfg)
 fig=figure('Visible',cfg.plot.visible,'Color','w'); valid=logical(data.Feasible);
-hFront=scatter(data.Jstraightness(valid),data.Jvibration(valid),60, ...
-    data.LambdaVibration(valid),'filled','DisplayName','Near-time Pareto scan');
-hold on; grid on; cb=colorbar; cb.Label.String='Vibration weight \lambda_{vib}';
-hSelected=plot(solution.objectives.straightness,solution.objectives.vibration, ...
-    'p','MarkerSize',14,'MarkerFaceColor',highlightColor,'MarkerEdgeColor','k', ...
-    'DisplayName',label);
-xlabel('Straightness objective [-]'); ylabel('Vibration objective [-]');
-title(sprintf('%s: position relative to the Pareto front',label));
-legend([hFront,hSelected],{'Near-time Pareto scan',label},'Location','best');
+front=data.ParetoOptimal;
+hReference=plot(data.Time_s(valid),data.NoSuppressionJvibration(valid), ...
+    '--','Color',[0.55 0.55 0.55],'LineWidth',1.0);
+hold on; grid on;
+[frontTime,order]=sort(data.Time_s(front));
+frontVibration=data.Jvibration(front);
+hFront=plot(frontTime,frontVibration(order),'-o', ...
+    'Color',[0.10 0.35 0.75],'MarkerFaceColor',[0.10 0.35 0.75], ...
+    'LineWidth',1.3);
+hSelected=plot(solution.T,solution.objectives.vibration,'p', ...
+    'MarkerSize',14,'MarkerFaceColor',highlightColor,'MarkerEdgeColor','k');
+xlabel('Machining time T [s]'); ylabel('Vibration objective J_{vib} [-]');
+title(sprintf('%s: position in the time-vibration objective space',label));
+legend([hReference,hFront,hSelected], ...
+    {'No-suppression reference','Time-vibration Pareto front',label}, ...
+    'Location','best');
 save_publication_figure(fig,fullfile(cfg.output.figures,'15_pareto_context.png'),cfg);
 end
 

@@ -43,7 +43,7 @@ add('归一化尺度','cfg.scale.snap',cfg.scale.snap,'mm/s^4','snap 变量的 N
 add('归一化尺度','cfg.scale.crackle',cfg.scale.crackle,'mm/s^5','crackle 变量的 NLP 归一化尺度。','归一化 crackle 数值变小。','归一化 crackle 数值变大。','自动派生，请勿直接修改');
 add('归一化尺度','cfg.scale.pop',cfg.scale.pop,'mm/s^6','POP 变量的 NLP 归一化尺度。','归一化 POP 数值变小。','归一化 POP 数值变大。','自动派生，请勿直接修改');
 
-add('Stage A 与时间范围','cfg.optimization.time_slack',cfg.optimization.time_slack,'相对值','Stage B 相对最短时间可增加的比例；0.02 表示 2%。','可用时间点增多，通常能获得更低振动。','更接近严格最短时间，折中空间减少。','建议按时间容许量修改');
+add('Stage A 与时间范围','cfg.optimization.time_slack',cfg.optimization.time_slack,'相对值','时间–振动 Pareto 前沿相对最短时间可增加的比例；0.02 表示 2%。','整数时间候选点增多，Pareto 解更多，并通常能获得更低振动。','候选点减少且更接近严格最短时间。','需要更多时间–振动 Pareto 解时提高');
 add('Stage A 与时间范围','cfg.optimization.initial_segment_time',cfg.optimization.initial_segment_time,'s/段','构造慢速初始可行轨迹时每段的初始时长。','初始可行性更好，但首次模型更大。','启动更快，但可能找不到初始可行解。','求解困难时再修改');
 add('Stage A 与时间范围','cfg.optimization.initial_growth',cfg.optimization.initial_growth,'倍率','初始轨迹不可行时，每次放大分段时间的倍率。','更快扩大时长，但搜索步长更粗。','增长更细，但尝试次数可能增加。','高级调参');
 add('Stage A 与时间范围','cfg.optimization.max_initial_attempts',cfg.optimization.max_initial_attempts,'次','构造初始可行轨迹的最大尝试次数。','更不易过早失败，但最坏运行时间增加。','失败更快，但可能错过可行初值。','求解困难时再修改');
@@ -52,13 +52,13 @@ add('Stage A 与时间范围','cfg.optimization.min_segment_samples',cfg.optimiz
 add('Stage A 与时间范围','cfg.optimization.neighborhood_radius',cfg.optimization.neighborhood_radius,'整数区间','最短整数分配附近的局部重分配搜索半径。','检查更多 Nvec 邻域，耗时增加。','搜索更快，但可能漏掉更优分配。','高级调参');
 add('Stage A 与时间范围','cfg.optimization.max_coordinate_passes',cfg.optimization.max_coordinate_passes,'轮','逐段坐标搜索的最大轮数。','搜索更充分，最坏耗时增加。','更快停止，可能未完全收敛。','高级调参');
 
-add('Pareto 与逐时间扫描','cfg.optimization.pareto_weights',cfg.optimization.pareto_weights,'向量','Stage B 振动权重 lambda_vib 的扫描网格。','增加权重点密度可得到更多 Pareto 解，但 NLP 次数增加。','减少权重点可加快运行，但前沿更稀疏。','需要更多 Pareto 解时修改');
+add('Pareto 与逐时间扫描','cfg.optimization.pareto_weights',cfg.optimization.pareto_weights,'向量','旧版“直线保持–振动”权重扫描参数；主流程的“时间–振动”Pareto 前沿不再使用。','对当前主流程无影响。','对当前主流程无影响。','仅保留兼容性，不建议修改');
 add('Pareto 与逐时间扫描','cfg.optimization.secondary_sample_offsets',cfg.optimization.secondary_sample_offsets,'整数向量','相对默认 Stage B 时间额外采样的整数时间偏移；空值表示不额外采样。','加入更多时间切片，计算量增加。','减少额外时间切片。','高级调参');
 add('Pareto 与逐时间扫描','cfg.optimization.run_optional_two_mode',cfg.optimization.run_optional_two_mode,'逻辑值','是否执行可选的双模态扩展算例。','true 会增加一组双模态求解。','false 仅运行主要算例。','仅研究双模态时开启');
-add('Pareto 与逐时间扫描','cfg.optimization.time_sweep_enable',cfg.optimization.time_sweep_enable,'逻辑值','是否对 Nmin 到 Nmax 的每个整数时间求无抑制/有抑制成对解。','true 可得到完整逐时间对比，耗时显著增加。','false 跳过逐时间成对扫描。','需要完整对比时保持 true');
-add('Pareto 与逐时间扫描','cfg.optimization.time_sweep_lambda_vibration',cfg.optimization.time_sweep_lambda_vibration,'相对值','逐时间扫描中有抑制解采用的振动目标权重，范围 (0,1]。','更强调完整振动目标。','更保留直线保持目标，抑振强度可能下降。','建议按折中偏好修改');
+add('Pareto 与逐时间扫描','cfg.optimization.time_sweep_enable',cfg.optimization.time_sweep_enable,'逻辑值','是否对 Nmin 到 Nmax 的每个整数时间求无抑制/有抑制成对解，并构建时间–振动 Pareto 前沿。','true 生成主 Pareto 前沿。','false 无法生成主 Pareto 前沿。','主流程必须保持 true');
+add('Pareto 与逐时间扫描','cfg.optimization.time_sweep_lambda_vibration',cfg.optimization.time_sweep_lambda_vibration,'相对值','固定时间下振动目标权重；时间–振动 Pareto 要求该值严格等于 1。','不允许大于 1。','小于 1 会混入直线保持目标，程序将拒绝运行。','保持 1；用 cfg.objective.* 调整振动构成');
 add('Pareto 与逐时间扫描','cfg.optimization.time_sweep_resume',cfg.optimization.time_sweep_resume,'逻辑值','是否读取检查点并跳过已完成且兼容的时间点。','true 适合长时间计算和中断恢复。','false 会重新计算全部时间点。','通常保持 true');
-add('Pareto 与逐时间扫描','cfg.optimization.time_sweep_boundary_cpu_multiplier',cfg.optimization.time_sweep_boundary_cpu_multiplier,'倍率','严格最短时间边界点相对普通单次求解的 CPU 时限倍率。','边界点更可能完成，但等待更久。','更快超时，可能失去 Nmin 成对结果。','边界点超时时提高');
+add('Pareto 与逐时间扫描','cfg.optimization.time_sweep_boundary_cpu_multiplier',cfg.optimization.time_sweep_boundary_cpu_multiplier,'倍率','严格最短时间边界点及逐时间求解超时后自动重试所使用的 CPU 时限倍率。','边界点和较慢电脑上的困难时间点更可能完成，但单次重试等待更久。','重试更快结束，但可能再次超时。','出现 Maximum_CpuTime_Exceeded 时可从 2 提高到 3～4');
 
 add('直线保持','cfg.straightness.enable',cfg.straightness.enable,'逻辑值','是否启用直线核心区域的法向速度惩罚。','true 可减少非运动轴参与直线段。','false 不再优化直线保持。','通常保持 true');
 add('直线保持','cfg.straightness.hard_enable',cfg.straightness.hard_enable,'逻辑值','是否把直线核心法向速度改为硬约束。','true 直线更严格，但更易不可行。','false 使用更稳健的软目标。','默认 false，谨慎开启');
